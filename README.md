@@ -1,0 +1,1 @@
+# scs-status-page-openapi
