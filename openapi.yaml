@@ -85,6 +85,22 @@ paths:
                   $ref: '#/components/schemas/Component'
   /incidents:
     get:
+      summary: Get list of incidents
+      parameters:
+      - in: query
+        name: start
+        schema:
+          type: string
+          format: date-time
+        required: true
+        description: Start of time frame to query for (RFC3339)
+      - in: query
+        name: end
+        schema:
+          type: string
+          format: date-time
+        required: true
+        description: End of time frame to query for (RFC3339)
       responses:
         '200':
           description: OK
