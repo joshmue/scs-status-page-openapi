@@ -3,7 +3,7 @@ info:
   title: SCS Status Page API
   version: '1.0'
 servers:
-- url: https://localhost/v1
+- url: http://localhost:3000
 components:
   schemas:
     IncidentImpactType:
