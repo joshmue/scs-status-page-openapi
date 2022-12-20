@@ -1,0 +1,96 @@
+openapi: '3.0.2'
+info:
+  title: SCS Status Page API
+  version: '1.0'
+servers:
+- url: https://localhost/v1
+components:
+  schemas:
+    IncidentImpactType:
+      type: string
+    IncidentPhase:
+      type: string
+    Labels:
+      type: object
+      additionalProperties:
+        type: string
+    Component:
+      type: object
+      properties:
+        id:
+          type: string
+        displayName:
+          type: string
+        labels:
+          $ref: '#/components/schemas/Labels'
+        affectedBy:
+          type: array
+          items:
+            $ref: '#/components/schemas/Incident'
+    Incident:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        affects:
+          type: array
+          items:
+            $ref: '#/components/schemas/Component'
+        beganAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: string
+          format: date-time
+          nullable: true
+        impactType:
+          $ref: '#/components/schemas/IncidentImpactType'
+        phase:
+          $ref: '#/components/schemas/IncidentPhase'
+paths:
+  /phases:
+    get:
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/IncidentPhase'
+  /impacttypes:
+    get:
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/IncidentImpactType'
+  /components:
+    get:
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Component'
+  /incidents:
+    get:
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Incident'
