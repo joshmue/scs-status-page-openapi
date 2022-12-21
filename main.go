@@ -84,12 +84,11 @@ func (s *ServerImplementation) GetPhases(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	phases := []string{}
+	phases := []api.IncidentPhase{}
 	for _, phase := range query.User.ProjectV2.Field.ProjectV2SingleSelectField.Options {
 		phases = append(phases, phase.Name)
 	}
 	return ctx.JSON(200, phases)
-
 }
 
 func main() {
