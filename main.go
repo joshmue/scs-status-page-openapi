@@ -26,39 +26,6 @@ type ServerImplementation struct {
 	LastPhase      string
 }
 
-func (s *ServerImplementation) ensureProjectConfiguration() error {
-	var query struct {
-		User struct {
-			ProjectV2 struct {
-				Field struct {
-					ProjectV2SingleSelectField struct {
-						Options []struct {
-							Name string
-						}
-					} `graphql:"... on ProjectV2SingleSelectField"`
-				} `graphql:"field(name: $status)"`
-			} `graphql:"projectV2(number: $number)"`
-		} `graphql:"user(login: $user)"`
-	}
-	err := s.GithubV4Client.Query(
-		context.Background(),
-		&query,
-		map[string]interface{}{
-			"user":   githubv4.String(s.ProjectOwner),
-			"number": githubv4.Int(s.ProjectNumber),
-			"status": githubv4.String("Status"),
-		},
-	)
-	options := query.User.ProjectV2.Field.ProjectV2SingleSelectField.Options
-	if options[len(options)-1].Name != s.LastPhase {
-		return fmt.Errorf("expected final phase to be %s; is %s", s.LastPhase, options[len(options)-1].Name)
-	}
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (s *ServerImplementation) fillProjectID() error {
 	var query struct {
 		User struct {
