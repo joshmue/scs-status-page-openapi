@@ -68,7 +68,7 @@ func (s *ServerImplementation) GetPhases(ctx echo.Context) error {
 							Name string
 						}
 					} `graphql:"... on ProjectV2SingleSelectField"`
-				} `graphql:"field(name: $status)"`
+				} `graphql:"field(name: \"Status\")"`
 			} `graphql:"projectV2(number: $number)"`
 		} `graphql:"user(login: $user)"`
 	}
@@ -78,7 +78,6 @@ func (s *ServerImplementation) GetPhases(ctx echo.Context) error {
 		map[string]interface{}{
 			"user":   githubv4.String(s.ProjectOwner),
 			"number": githubv4.Int(s.ProjectNumber),
-			"status": githubv4.String("Status"),
 		},
 	)
 	if err != nil {
