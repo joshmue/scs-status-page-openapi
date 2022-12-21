@@ -9,7 +9,6 @@ import (
 	"github.com/shurcooL/githubv4"
 )
 
-
 func (s *ServerImplementation) fillProjectID() error {
 	var query struct {
 		User struct {
@@ -37,7 +36,36 @@ func (s *ServerImplementation) GetComponents(ctx echo.Context) error {
 	return fmt.Errorf("not implemented")
 }
 func (s *ServerImplementation) GetImpacttypes(ctx echo.Context) error {
-	return fmt.Errorf("not implemented")
+	var query struct {
+		User struct {
+			ProjectV2 struct {
+				Field struct {
+					ProjectV2SingleSelectField struct {
+						Options []struct {
+							Name string
+						}
+					} `graphql:"... on ProjectV2SingleSelectField"`
+				} `graphql:"field(name: \"Impact Type\")"`
+			} `graphql:"projectV2(number: $number)"`
+		} `graphql:"user(login: $user)"`
+	}
+	err := s.GithubV4Client.Query(
+		context.Background(),
+		&query,
+		map[string]interface{}{
+			"user":   githubv4.String(s.ProjectOwner),
+			"number": githubv4.Int(s.ProjectNumber),
+		},
+	)
+	if err != nil {
+		ctx.Logger().Error(err)
+		return echo.NewHTTPError(500)
+	}
+	impactTypes := []api.IncidentImpactType{}
+	for _, phase := range query.User.ProjectV2.Field.ProjectV2SingleSelectField.Options {
+		impactTypes = append(impactTypes, phase.Name)
+	}
+	return ctx.JSON(200, impactTypes)
 }
 func (s *ServerImplementation) GetIncidents(ctx echo.Context, params api.GetIncidentsParams) error {
 	return fmt.Errorf("not implemented")
@@ -65,7 +93,8 @@ func (s *ServerImplementation) GetPhases(ctx echo.Context) error {
 		},
 	)
 	if err != nil {
-		return err
+		ctx.Logger().Error(err)
+		return echo.NewHTTPError(500)
 	}
 	phases := []api.IncidentPhase{}
 	for _, phase := range query.User.ProjectV2.Field.ProjectV2SingleSelectField.Options {
