@@ -12,38 +12,45 @@ import (
 	"github.com/joshmue/scs-status-page-openapi/pkg/api"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/shurcooL/githubv4"
 	"golang.org/x/oauth2"
 )
 
 type ServerImplementation struct {
-	GithubClient *github.Client
-	RepoOwner    string
-	RepoName     string
+	GithubClient   *github.Client
+	GithubV4Client *githubv4.Client
+	ProjectOwner   string
+	ProjectNumber  int64
+	ProjectID      string
+	ImpactTypes    []string
+	Phases         []string
+}
+
+func (s *ServerImplementation) fillProjectID() error {
+	var query struct {
+		User struct {
+			ProjectV2 struct {
+				Id string `graphql:"id"`
+			} `graphql:"projectV2(number: $number)"`
+		} `graphql:"user(login: $user)"`
+	}
+	err := s.GithubV4Client.Query(
+		context.Background(),
+		&query,
+		map[string]interface{}{
+			"user":   githubv4.String(s.ProjectOwner),
+			"number": githubv4.Int(s.ProjectNumber),
+		},
+	)
+	if err != nil {
+		return err
+	}
+	s.ProjectID = query.User.ProjectV2.Id
+	return nil
 }
 
 func (s *ServerImplementation) GetComponents(ctx echo.Context) error {
-	labels, _, err := s.GithubClient.Issues.ListLabels(
-		ctx.Request().Context(),
-		s.RepoOwner, s.RepoName, nil,
-	)
-	if err != nil {
-		ctx.Logger().Error(err)
-		return echo.NewHTTPError(500)
-	}
-	components := []*api.Component{}
-	for _, label := range labels {
-		if !strings.HasPrefix(label.GetName(), "component:") {
-			continue
-		}
-		componentId := fmt.Sprintf("%d", label.GetID())
-		componentDisplayName := strings.TrimPrefix(label.GetName(), "component:")
-		newComponent := &api.Component{
-			Id:          &componentId,
-			DisplayName: &componentDisplayName,
-		}
-		components = append(components, newComponent)
-	}
-	return ctx.JSON(200, components)
+	return fmt.Errorf("not implemented")
 }
 func (s *ServerImplementation) GetImpacttypes(ctx echo.Context) error {
 	return fmt.Errorf("not implemented")
@@ -57,17 +64,23 @@ func (s *ServerImplementation) GetPhases(ctx echo.Context) error {
 
 func main() {
 	addr := flag.String("addr", ":3000", "address to listen on")
-	repoOwner := flag.String("repo.owner", "joshmue", "Owner of Github repository")
-	repoName := flag.String("repo.name", "statuspage-issues-playground", "Name of Github repository")
+	projectOwner := flag.String("github.project.user", "joshmue", "user owning the project")
+	projectNumber := flag.Int64("github.project.number", 1, "project number")
+	impactTypeList := flag.String("impacttypes", "performance-degration,connectivity-issues", `","-seperated list of impact types`)
 	flag.Parse()
 
-	githubClient := github.NewClient(oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(
+	httpClient := oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: os.Getenv("GITHUB_TOKEN")},
-	)))
-	var server api.ServerInterface = &ServerImplementation{
-		GithubClient: githubClient,
-		RepoOwner:    *repoOwner,
-		RepoName:     *repoName,
+	))
+	server := &ServerImplementation{
+		GithubClient:   github.NewClient(httpClient),
+		GithubV4Client: githubv4.NewClient(httpClient),
+		ProjectOwner:   *projectOwner,
+		ProjectNumber:  *projectNumber,
+		ImpactTypes:    strings.Split(*impactTypeList, ","),
+	}
+	if err := server.fillProjectID(); err != nil {
+		log.Fatalln(err)
 	}
 	e := echo.New()
 	e.Use(middleware.Logger())
