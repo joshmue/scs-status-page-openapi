@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/shurcooL/githubv4"
 )
@@ -12,6 +13,15 @@ func (s *ServerImplementation) ensureProjectConfiguration() error {
 	var query struct {
 		User struct {
 			ProjectV2 struct {
+				Repositories struct {
+					Nodes []struct {
+						Labels struct {
+							Nodes []struct {
+								Name string
+							}
+						} `graphql:"labels(first: 100)"`
+					}
+				} `graphql:"repositories(first: 100)"`
 				StatusField struct {
 					ProjectV2SingleSelectField struct {
 						Options []struct {
@@ -49,6 +59,18 @@ func (s *ServerImplementation) ensureProjectConfiguration() error {
 	)
 	if err != nil {
 		return err
+	}
+	// Check components
+	componentFound := false
+	for _, repo := range query.User.ProjectV2.Repositories.Nodes {
+		for _, label := range repo.Labels.Nodes {
+			if strings.HasPrefix(label.Name, "component:") {
+				componentFound = true
+			}
+		}
+	}
+	if !componentFound {
+		return fmt.Errorf("expected components, got none")
 	}
 	// Check "Status" field
 	phaseOptions := query.User.ProjectV2.StatusField.ProjectV2SingleSelectField.Options
