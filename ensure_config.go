@@ -18,12 +18,12 @@ func (s *ServerImplementation) ensureProjectConfiguration() error {
 							Name string
 						}
 					} `graphql:"... on ProjectV2SingleSelectField"`
-				} `graphql:"status: field(name: $status)"`
+				} `graphql:"status: field(name: \"Status\")"`
 				BeganAtField struct {
 					ProjectV2Field struct {
 						DataType string
 					} `graphql:"... on ProjectV2Field"`
-				} `graphql:"beganat: field(name: $beganat)"`
+				} `graphql:"beganat: field(name: \"Began At\")"`
 			} `graphql:"projectV2(number: $number)"`
 		} `graphql:"user(login: $user)"`
 	}
@@ -31,10 +31,8 @@ func (s *ServerImplementation) ensureProjectConfiguration() error {
 		context.Background(),
 		&query,
 		map[string]interface{}{
-			"user":    githubv4.String(s.ProjectOwner),
-			"number":  githubv4.Int(s.ProjectNumber),
-			"status":  githubv4.String("Status"),
-			"beganat": githubv4.String("Began At"),
+			"user":   githubv4.String(s.ProjectOwner),
+			"number": githubv4.Int(s.ProjectNumber),
 		},
 	)
 	if err != nil {
