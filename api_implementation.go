@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/joshmue/scs-status-page-openapi/pkg/api"
 	"github.com/labstack/echo/v4"
@@ -33,7 +34,48 @@ func (s *ServerImplementation) fillProjectID() error {
 }
 
 func (s *ServerImplementation) GetComponents(ctx echo.Context) error {
-	return fmt.Errorf("not implemented")
+	var query struct {
+		User struct {
+			ProjectV2 struct {
+				Repositories struct {
+					Nodes []struct {
+						Labels struct {
+							Nodes []struct {
+								Name        string
+								Id          string
+								Description string
+							}
+						} `graphql:"labels(first: 100)"`
+					}
+				} `graphql:"repositories(first: 100)"`
+			} `graphql:"projectV2(number: $number)"`
+		} `graphql:"user(login: $user)"`
+	}
+	err := s.GithubV4Client.Query(
+		context.Background(),
+		&query,
+		map[string]interface{}{
+			"user":   githubv4.String(s.ProjectOwner),
+			"number": githubv4.Int(s.ProjectNumber),
+		},
+	)
+	if err != nil {
+		ctx.Logger().Error(err)
+		return echo.NewHTTPError(500)
+	}
+	components := []api.Component{}
+	for repo := range query.User.ProjectV2.Repositories.Nodes {
+		for label := range query.User.ProjectV2.Repositories.Nodes[repo].Labels.Nodes {
+			if strings.HasPrefix(query.User.ProjectV2.Repositories.Nodes[repo].Labels.Nodes[label].Name, "component:") {
+				component := api.Component{
+					Id:          &query.User.ProjectV2.Repositories.Nodes[repo].Labels.Nodes[label].Name,
+					DisplayName: &query.User.ProjectV2.Repositories.Nodes[repo].Labels.Nodes[label].Description,
+				}
+				components = append(components, component)
+			}
+		}
+	}
+	return ctx.JSON(200, components)
 }
 func (s *ServerImplementation) GetImpacttypes(ctx echo.Context) error {
 	var query struct {
