@@ -7,6 +7,7 @@ require (
 	github.com/getkin/kin-openapi v0.111.0
 	github.com/google/go-github/v48 v48.2.0
 	github.com/labstack/echo/v4 v4.9.1
+	github.com/shurcooL/githubv4 v0.0.0-20221203213311-70889c5dac07
 	golang.org/x/oauth2 v0.3.0
 )
 
@@ -25,7 +26,6 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
-	github.com/shurcooL/githubv4 v0.0.0-20221203213311-70889c5dac07 // indirect
 	github.com/shurcooL/graphql v0.0.0-20220606043923-3cf50f8a0a29 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
