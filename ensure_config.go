@@ -24,6 +24,11 @@ func (s *ServerImplementation) ensureProjectConfiguration() error {
 						DataType string
 					} `graphql:"... on ProjectV2Field"`
 				} `graphql:"beganat: field(name: \"Began At\")"`
+				EndedAtField struct {
+					ProjectV2Field struct {
+						DataType string
+					} `graphql:"... on ProjectV2Field"`
+				} `graphql:"endedat: field(name: \"Ended At\")"`
 			} `graphql:"projectV2(number: $number)"`
 		} `graphql:"user(login: $user)"`
 	}
@@ -49,6 +54,10 @@ func (s *ServerImplementation) ensureProjectConfiguration() error {
 	// Check "Began At" field
 	if query.User.ProjectV2.BeganAtField.ProjectV2Field.DataType != "TEXT" {
 		return fmt.Errorf(`expected field "Began At" to be "TEXT"; is "%s"`, query.User.ProjectV2.BeganAtField.ProjectV2Field.DataType)
+	}
+	// Check "Ended At" field
+	if query.User.ProjectV2.EndedAtField.ProjectV2Field.DataType != "TEXT" {
+		return fmt.Errorf(`expected field "Began At" to be "TEXT"; is "%s"`, query.User.ProjectV2.EndedAtField.ProjectV2Field.DataType)
 	}
 	return nil
 }
