@@ -59,7 +59,37 @@ func (s *ServerImplementation) GetIncidents(ctx echo.Context, params api.GetInci
 	return fmt.Errorf("not implemented")
 }
 func (s *ServerImplementation) GetPhases(ctx echo.Context) error {
-	return fmt.Errorf("not implemented")
+	var query struct {
+		User struct {
+			ProjectV2 struct {
+				Field struct {
+					ProjectV2SingleSelectField struct {
+						Options []struct {
+							Name string
+						}
+					} `graphql:"... on ProjectV2SingleSelectField"`
+				} `graphql:"field(name: $status)"`
+			} `graphql:"projectV2(number: $number)"`
+		} `graphql:"user(login: $user)"`
+	}
+	err := s.GithubV4Client.Query(
+		context.Background(),
+		&query,
+		map[string]interface{}{
+			"user":   githubv4.String(s.ProjectOwner),
+			"number": githubv4.Int(s.ProjectNumber),
+			"status": githubv4.String("Status"),
+		},
+	)
+	if err != nil {
+		return err
+	}
+	phases := []string{}
+	for _, phase := range query.User.ProjectV2.Field.ProjectV2SingleSelectField.Options {
+		phases = append(phases, phase.Name)
+	}
+	return ctx.JSON(200, phases)
+
 }
 
 func main() {
