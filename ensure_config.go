@@ -19,6 +19,11 @@ func (s *ServerImplementation) ensureProjectConfiguration() error {
 						}
 					} `graphql:"... on ProjectV2SingleSelectField"`
 				} `graphql:"status: field(name: \"Status\")"`
+				ImpactTypeField struct {
+					ProjectV2Field struct {
+						DataType string
+					} `graphql:"... on ProjectV2Field"`
+				} `graphql:"impacttype: field(name: \"Impact Type\")"`
 				BeganAtField struct {
 					ProjectV2Field struct {
 						DataType string
@@ -58,6 +63,10 @@ func (s *ServerImplementation) ensureProjectConfiguration() error {
 	// Check "Ended At" field
 	if query.User.ProjectV2.EndedAtField.ProjectV2Field.DataType != "TEXT" {
 		return fmt.Errorf(`expected field "Began At" to be "TEXT"; is "%s"`, query.User.ProjectV2.EndedAtField.ProjectV2Field.DataType)
+	}
+	// Check "Impact Type" field
+	if query.User.ProjectV2.ImpactTypeField.ProjectV2Field.DataType != "TEXT" {
+		return fmt.Errorf(`expected field "Began At" to be "TEXT"; is "%s"`, query.User.ProjectV2.ImpactTypeField.ProjectV2Field.DataType)
 	}
 	return nil
 }
