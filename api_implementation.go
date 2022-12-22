@@ -78,7 +78,7 @@ func (s *ServerImplementation) GetComponents(ctx echo.Context) error {
 }
 func (s *ServerImplementation) GetImpacttypes(ctx echo.Context) error {
 	var query struct {
-		User struct {
+		Node struct {
 			ProjectV2 struct {
 				Field struct {
 					ProjectV2SingleSelectField struct {
@@ -87,15 +87,14 @@ func (s *ServerImplementation) GetImpacttypes(ctx echo.Context) error {
 						}
 					} `graphql:"... on ProjectV2SingleSelectField"`
 				} `graphql:"field(name: \"Impact Type\")"`
-			} `graphql:"projectV2(number: $number)"`
-		} `graphql:"user(login: $user)"`
+			} `graphql:"... on ProjectV2"`
+		} `graphql:"node(id: $projectid)"`
 	}
 	err := s.GithubV4Client.Query(
 		context.Background(),
 		&query,
 		map[string]interface{}{
-			"user":   githubv4.String(s.ProjectOwner),
-			"number": githubv4.Int(s.ProjectNumber),
+			"projectid": githubv4.ID(s.ProjectID),
 		},
 	)
 	if err != nil {
@@ -103,7 +102,7 @@ func (s *ServerImplementation) GetImpacttypes(ctx echo.Context) error {
 		return echo.NewHTTPError(500)
 	}
 	impactTypes := []api.IncidentImpactType{}
-	for _, phase := range query.User.ProjectV2.Field.ProjectV2SingleSelectField.Options {
+	for _, phase := range query.Node.ProjectV2.Field.ProjectV2SingleSelectField.Options {
 		impactTypes = append(impactTypes, phase.Name)
 	}
 	return ctx.JSON(200, impactTypes)
@@ -113,7 +112,7 @@ func (s *ServerImplementation) GetIncidents(ctx echo.Context, params api.GetInci
 }
 func (s *ServerImplementation) GetPhases(ctx echo.Context) error {
 	var query struct {
-		User struct {
+		Node struct {
 			ProjectV2 struct {
 				Field struct {
 					ProjectV2SingleSelectField struct {
@@ -122,15 +121,14 @@ func (s *ServerImplementation) GetPhases(ctx echo.Context) error {
 						}
 					} `graphql:"... on ProjectV2SingleSelectField"`
 				} `graphql:"field(name: \"Status\")"`
-			} `graphql:"projectV2(number: $number)"`
-		} `graphql:"user(login: $user)"`
+			} `graphql:"... on ProjectV2"`
+		} `graphql:"node(id: $projectid)"`
 	}
 	err := s.GithubV4Client.Query(
 		context.Background(),
 		&query,
 		map[string]interface{}{
-			"user":   githubv4.String(s.ProjectOwner),
-			"number": githubv4.Int(s.ProjectNumber),
+			"projectid": githubv4.ID(s.ProjectID),
 		},
 	)
 	if err != nil {
@@ -138,7 +136,7 @@ func (s *ServerImplementation) GetPhases(ctx echo.Context) error {
 		return echo.NewHTTPError(500)
 	}
 	phases := []api.IncidentPhase{}
-	for _, phase := range query.User.ProjectV2.Field.ProjectV2SingleSelectField.Options {
+	for _, phase := range query.Node.ProjectV2.Field.ProjectV2SingleSelectField.Options {
 		phases = append(phases, phase.Name)
 	}
 	return ctx.JSON(200, phases)
