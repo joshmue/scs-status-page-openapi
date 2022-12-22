@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/joshmue/scs-status-page-openapi/pkg/api"
 	"github.com/labstack/echo/v4"
@@ -121,7 +122,12 @@ func (s *ServerImplementation) GetIncidents(ctx echo.Context, params api.GetInci
 				Title string
 			} `graphql:"... on Issue"`
 		}
-		FieldValueByName struct {
+		BeganAt struct {
+			ProjectV2ItemFieldTextValue struct {
+				Text string
+			} `graphql:"... on ProjectV2ItemFieldTextValue"`
+		} `graphql:"beganat: fieldValueByName(name: \"Began At\")"`
+		Labels struct {
 			ProjectV2ItemFieldLabelValue struct {
 				Labels struct {
 					Nodes []struct {
@@ -129,7 +135,7 @@ func (s *ServerImplementation) GetIncidents(ctx echo.Context, params api.GetInci
 					}
 				} `graphql:"labels(first:10)"`
 			} `graphql:"... on ProjectV2ItemFieldLabelValue"`
-		} `graphql:"fieldValueByName(name: \"Labels\")"`
+		} `graphql:"labels: fieldValueByName(name: \"Labels\")"`
 	}
 	var query struct {
 		Node struct {
@@ -155,16 +161,21 @@ func (s *ServerImplementation) GetIncidents(ctx echo.Context, params api.GetInci
 	// Map GraphQL output to OpenAPI Spec
 	incidents := []api.Incident{}
 	for itemKey := range query.Node.ProjectV2.Items.Nodes {
+		beganAt, err := time.Parse(time.RFC3339, query.Node.ProjectV2.Items.Nodes[itemKey].BeganAt.ProjectV2ItemFieldTextValue.Text)
+		if err != nil {
+			ctx.Logger().Warnf("invalid date %v", query.Node.ProjectV2.Items.Nodes[itemKey].BeganAt.ProjectV2ItemFieldTextValue.Text)
+		}
 		incident := api.Incident{
 			Affects: &[]api.Component{},
 			Id:      &query.Node.ProjectV2.Items.Nodes[itemKey].Content.Issue.Id,
 			Title:   &query.Node.ProjectV2.Items.Nodes[itemKey].Content.Issue.Title,
+			BeganAt: &beganAt,
 		}
-		for componentKey := range query.Node.ProjectV2.Items.Nodes[itemKey].FieldValueByName.ProjectV2ItemFieldLabelValue.Labels.Nodes {
+		for componentKey := range query.Node.ProjectV2.Items.Nodes[itemKey].Labels.ProjectV2ItemFieldLabelValue.Labels.Nodes {
 			*incident.Affects = append(
 				*incident.Affects,
 				api.Component{
-					Id: &query.Node.ProjectV2.Items.Nodes[itemKey].FieldValueByName.ProjectV2ItemFieldLabelValue.Labels.Nodes[componentKey].Name,
+					Id: &query.Node.ProjectV2.Items.Nodes[itemKey].Labels.ProjectV2ItemFieldLabelValue.Labels.Nodes[componentKey].Name,
 				},
 			)
 		}
