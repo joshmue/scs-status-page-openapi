@@ -60,5 +60,7 @@ func main() {
 	}
 	e.Logger.Debugf("Starting Server...")
 	api.RegisterHandlers(e, server)
+	e.File("/openapi.yaml", "./openapi.yaml")
+	e.GET("/swagger/", serveSwagger)
 	e.Logger.Fatal(e.Start(*addr))
 }
