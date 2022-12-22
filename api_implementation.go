@@ -11,6 +11,8 @@ import (
 )
 
 func (s *ServerImplementation) fillProjectID() error {
+	// TODO
+	// Make this also accept organizations
 	var query struct {
 		User struct {
 			ProjectV2 struct {
