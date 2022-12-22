@@ -13,6 +13,9 @@ import (
 func (s *ServerImplementation) fillProjectID() error {
 	// TODO
 	// Make this also accept organizations
+	if s.ProjectOwnerIsOrg {
+		return fmt.Errorf("support for organizations owning projects not yet implemented")
+	}
 	var query struct {
 		User struct {
 			ProjectV2 struct {

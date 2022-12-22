@@ -16,18 +16,20 @@ import (
 )
 
 type ServerImplementation struct {
-	GithubClient   *github.Client
-	GithubV4Client *githubv4.Client
-	ProjectOwner   string
-	ProjectNumber  int64
-	ProjectID      string
-	ImpactTypes    []string
-	LastPhase      string
+	GithubClient      *github.Client
+	GithubV4Client    *githubv4.Client
+	ProjectOwner      string
+	ProjectOwnerIsOrg bool
+	ProjectNumber     int64
+	ProjectID         string
+	ImpactTypes       []string
+	LastPhase         string
 }
 
 func main() {
 	addr := flag.String("addr", ":3000", "address to listen on")
-	projectOwner := flag.String("github.project.user", "joshmue", "user owning the project")
+	projectOwner := flag.String("github.project.owner", "joshmue", "user owning the project")
+	projectOwnerIsOrg := flag.Bool("github.project.owner.is-org", false, "sets whether the owner of the github project is an org instead of an user")
 	projectNumber := flag.Int64("github.project.number", 1, "project number")
 	impactTypeList := flag.String("impacttypes", "performance-degration,connectivity-issues", `","-seperated list of impact types`)
 	lastPhase := flag.String("last-phase", "Done", "last phase of incidents")
@@ -37,12 +39,13 @@ func main() {
 		&oauth2.Token{AccessToken: os.Getenv("GITHUB_TOKEN")},
 	))
 	server := &ServerImplementation{
-		GithubClient:   github.NewClient(httpClient),
-		GithubV4Client: githubv4.NewClient(httpClient),
-		ProjectOwner:   *projectOwner,
-		ProjectNumber:  *projectNumber,
-		ImpactTypes:    strings.Split(*impactTypeList, ","),
-		LastPhase:      *lastPhase,
+		GithubClient:      github.NewClient(httpClient),
+		GithubV4Client:    githubv4.NewClient(httpClient),
+		ProjectOwner:      *projectOwner,
+		ProjectOwnerIsOrg: *projectOwnerIsOrg,
+		ProjectNumber:     *projectNumber,
+		ImpactTypes:       strings.Split(*impactTypeList, ","),
+		LastPhase:         *lastPhase,
 	}
 	if err := server.fillProjectID(); err != nil {
 		log.Fatalln(err)
