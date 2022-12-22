@@ -19,9 +19,9 @@ func (s *ServerImplementation) ensureProjectConfiguration() error {
 							Nodes []struct {
 								Name string
 							}
-						} `graphql:"labels(first: 100)"`
+						} `graphql:"labels(first: 10)"`
 					}
-				} `graphql:"repositories(first: 100)"`
+				} `graphql:"repositories(first: 10)"`
 				StatusField struct {
 					ProjectV2SingleSelectField struct {
 						Options []struct {
