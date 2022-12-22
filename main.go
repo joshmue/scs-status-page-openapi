@@ -47,9 +47,9 @@ func main() {
 		ImpactTypes:       strings.Split(*impactTypeList, ","),
 		LastPhase:         *lastPhase,
 	}
+
 	e := echo.New()
 	e.Logger.SetLevel(log.DEBUG)
-	e.Use(middleware.Logger())
 	e.Logger.Debugf("Obtaining Github Project ID...")
 	if err := server.fillProjectID(); err != nil {
 		e.Logger.Fatal(err)
@@ -59,8 +59,13 @@ func main() {
 		e.Logger.Fatal(err)
 	}
 	e.Logger.Debugf("Starting Server...")
+
+	e.Logger.Debugf("Registering handlers...")
+	e.Use(middleware.Logger())
 	api.RegisterHandlers(e, server)
 	e.File("/openapi.yaml", "./openapi.yaml")
 	e.GET("/swagger/", serveSwagger)
+
+	e.Logger.Debugf("Starting server...")
 	e.Logger.Fatal(e.Start(*addr))
 }
