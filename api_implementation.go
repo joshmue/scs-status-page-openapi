@@ -113,7 +113,64 @@ func (s *ServerImplementation) GetImpacttypes(ctx echo.Context) error {
 	return ctx.JSON(200, impactTypes)
 }
 func (s *ServerImplementation) GetIncidents(ctx echo.Context, params api.GetIncidentsParams) error {
-	return fmt.Errorf("not implemented")
+	type projectItem struct {
+		Type    string
+		Content struct {
+			Issue struct {
+				Id    string
+				Title string
+			} `graphql:"... on Issue"`
+		}
+		FieldValueByName struct {
+			ProjectV2ItemFieldLabelValue struct {
+				Labels struct {
+					Nodes []struct {
+						Name string
+					}
+				} `graphql:"labels(first:10)"`
+			} `graphql:"... on ProjectV2ItemFieldLabelValue"`
+		} `graphql:"fieldValueByName(name: \"Labels\")"`
+	}
+	var query struct {
+		Node struct {
+			ProjectV2 struct {
+				Items struct {
+					Nodes []projectItem
+				} `graphql:"items(first: 10)"`
+			} `graphql:"... on ProjectV2"`
+		} `graphql:"node(id: $projectid)"`
+	}
+	err := s.GithubV4Client.Query(
+		context.Background(),
+		&query,
+		map[string]interface{}{
+			"projectid": githubv4.ID(s.ProjectID),
+		},
+	)
+	if err != nil {
+		ctx.Logger().Error(err)
+		return echo.NewHTTPError(500)
+	}
+
+	// Map GraphQL output to OpenAPI Spec
+	incidents := []api.Incident{}
+	for itemKey := range query.Node.ProjectV2.Items.Nodes {
+		incident := api.Incident{
+			Affects: &[]api.Component{},
+			Id:      &query.Node.ProjectV2.Items.Nodes[itemKey].Content.Issue.Id,
+			Title:   &query.Node.ProjectV2.Items.Nodes[itemKey].Content.Issue.Title,
+		}
+		for componentKey := range query.Node.ProjectV2.Items.Nodes[itemKey].FieldValueByName.ProjectV2ItemFieldLabelValue.Labels.Nodes {
+			*incident.Affects = append(
+				*incident.Affects,
+				api.Component{
+					Id: &query.Node.ProjectV2.Items.Nodes[itemKey].FieldValueByName.ProjectV2ItemFieldLabelValue.Labels.Nodes[componentKey].Name,
+				},
+			)
+		}
+		incidents = append(incidents, incident)
+	}
+	return ctx.JSON(200, incidents)
 }
 func (s *ServerImplementation) GetPhases(ctx echo.Context) error {
 	var query struct {
