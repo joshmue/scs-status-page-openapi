@@ -121,6 +121,16 @@ func (s *ServerImplementation) GetIncidents(ctx echo.Context, params api.GetInci
 				Title string
 			} `graphql:"... on Issue"`
 		}
+		Phase struct {
+			ProjectV2ItemFieldSingleSelectValue struct {
+				Name string
+			} `graphql:"... on ProjectV2ItemFieldSingleSelectValue"`
+		} `graphql:"phase: fieldValueByName(name: \"Status\")"`
+		ImpactType struct {
+			ProjectV2ItemFieldSingleSelectValue struct {
+				Name string
+			} `graphql:"... on ProjectV2ItemFieldSingleSelectValue"`
+		} `graphql:"impacttype: fieldValueByName(name: \"Impact Type\")"`
 		BeganAt struct {
 			ProjectV2ItemFieldTextValue struct {
 				Text string
@@ -174,11 +184,13 @@ func (s *ServerImplementation) GetIncidents(ctx echo.Context, params api.GetInci
 			ctx.Logger().Warn(err)
 		}
 		incident := api.Incident{
-			Affects: &[]api.Component{},
-			Id:      &query.Node.ProjectV2.Items.Nodes[itemKey].Content.Issue.Id,
-			Title:   &query.Node.ProjectV2.Items.Nodes[itemKey].Content.Issue.Title,
-			BeganAt: beganAt,
-			EndedAt: endedAt,
+			Affects:    &[]api.Component{},
+			Id:         &query.Node.ProjectV2.Items.Nodes[itemKey].Content.Issue.Id,
+			Title:      &query.Node.ProjectV2.Items.Nodes[itemKey].Content.Issue.Title,
+			ImpactType: &query.Node.ProjectV2.Items.Nodes[itemKey].ImpactType.ProjectV2ItemFieldSingleSelectValue.Name,
+			Phase:      &query.Node.ProjectV2.Items.Nodes[itemKey].Phase.ProjectV2ItemFieldSingleSelectValue.Name,
+			BeganAt:    beganAt,
+			EndedAt:    endedAt,
 		}
 		for componentKey := range query.Node.ProjectV2.Items.Nodes[itemKey].Labels.ProjectV2ItemFieldLabelValue.Labels.Nodes {
 			*incident.Affects = append(
