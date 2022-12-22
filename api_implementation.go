@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/joshmue/scs-status-page-openapi/pkg/api"
 	"github.com/labstack/echo/v4"
@@ -127,6 +126,11 @@ func (s *ServerImplementation) GetIncidents(ctx echo.Context, params api.GetInci
 				Text string
 			} `graphql:"... on ProjectV2ItemFieldTextValue"`
 		} `graphql:"beganat: fieldValueByName(name: \"Began At\")"`
+		EndedAt struct {
+			ProjectV2ItemFieldTextValue struct {
+				Text string
+			} `graphql:"... on ProjectV2ItemFieldTextValue"`
+		} `graphql:"endedat: fieldValueByName(name: \"Ended At\")"`
 		Labels struct {
 			ProjectV2ItemFieldLabelValue struct {
 				Labels struct {
@@ -161,15 +165,20 @@ func (s *ServerImplementation) GetIncidents(ctx echo.Context, params api.GetInci
 	// Map GraphQL output to OpenAPI Spec
 	incidents := []api.Incident{}
 	for itemKey := range query.Node.ProjectV2.Items.Nodes {
-		beganAt, err := time.Parse(time.RFC3339, query.Node.ProjectV2.Items.Nodes[itemKey].BeganAt.ProjectV2ItemFieldTextValue.Text)
+		beganAt, err := ParseTimeOrNil(query.Node.ProjectV2.Items.Nodes[itemKey].BeganAt.ProjectV2ItemFieldTextValue.Text)
 		if err != nil {
-			ctx.Logger().Warnf("invalid date %v", query.Node.ProjectV2.Items.Nodes[itemKey].BeganAt.ProjectV2ItemFieldTextValue.Text)
+			ctx.Logger().Warn(err)
+		}
+		endedAt, err := ParseTimeOrNil(query.Node.ProjectV2.Items.Nodes[itemKey].EndedAt.ProjectV2ItemFieldTextValue.Text)
+		if err != nil {
+			ctx.Logger().Warn(err)
 		}
 		incident := api.Incident{
 			Affects: &[]api.Component{},
 			Id:      &query.Node.ProjectV2.Items.Nodes[itemKey].Content.Issue.Id,
 			Title:   &query.Node.ProjectV2.Items.Nodes[itemKey].Content.Issue.Title,
-			BeganAt: &beganAt,
+			BeganAt: beganAt,
+			EndedAt: endedAt,
 		}
 		for componentKey := range query.Node.ProjectV2.Items.Nodes[itemKey].Labels.ProjectV2ItemFieldLabelValue.Labels.Nodes {
 			*incident.Affects = append(
