@@ -35,7 +35,7 @@ func (s *ServerImplementation) fillProjectID() error {
 
 func (s *ServerImplementation) GetComponents(ctx echo.Context) error {
 	var query struct {
-		User struct {
+		Node struct {
 			ProjectV2 struct {
 				Repositories struct {
 					Nodes []struct {
@@ -48,15 +48,14 @@ func (s *ServerImplementation) GetComponents(ctx echo.Context) error {
 						} `graphql:"labels(first: 100)"`
 					}
 				} `graphql:"repositories(first: 100)"`
-			} `graphql:"projectV2(number: $number)"`
-		} `graphql:"user(login: $user)"`
+			} `graphql:"... on ProjectV2"`
+		} `graphql:"node(id: $projectid)"`
 	}
 	err := s.GithubV4Client.Query(
 		context.Background(),
 		&query,
 		map[string]interface{}{
-			"user":   githubv4.String(s.ProjectOwner),
-			"number": githubv4.Int(s.ProjectNumber),
+			"projectid": githubv4.ID(s.ProjectID),
 		},
 	)
 	if err != nil {
@@ -64,12 +63,12 @@ func (s *ServerImplementation) GetComponents(ctx echo.Context) error {
 		return echo.NewHTTPError(500)
 	}
 	components := []api.Component{}
-	for repo := range query.User.ProjectV2.Repositories.Nodes {
-		for label := range query.User.ProjectV2.Repositories.Nodes[repo].Labels.Nodes {
-			if strings.HasPrefix(query.User.ProjectV2.Repositories.Nodes[repo].Labels.Nodes[label].Name, "component:") {
+	for repo := range query.Node.ProjectV2.Repositories.Nodes {
+		for label := range query.Node.ProjectV2.Repositories.Nodes[repo].Labels.Nodes {
+			if strings.HasPrefix(query.Node.ProjectV2.Repositories.Nodes[repo].Labels.Nodes[label].Name, "component:") {
 				component := api.Component{
-					Id:          &query.User.ProjectV2.Repositories.Nodes[repo].Labels.Nodes[label].Name,
-					DisplayName: &query.User.ProjectV2.Repositories.Nodes[repo].Labels.Nodes[label].Description,
+					Id:          &query.Node.ProjectV2.Repositories.Nodes[repo].Labels.Nodes[label].Name,
+					DisplayName: &query.Node.ProjectV2.Repositories.Nodes[repo].Labels.Nodes[label].Description,
 				}
 				components = append(components, component)
 			}
