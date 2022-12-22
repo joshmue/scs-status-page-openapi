@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"log"
 	"os"
 	"strings"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/joshmue/scs-status-page-openapi/pkg/api"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/labstack/gommon/log"
 	"github.com/shurcooL/githubv4"
 	"golang.org/x/oauth2"
 )
@@ -47,14 +47,18 @@ func main() {
 		ImpactTypes:       strings.Split(*impactTypeList, ","),
 		LastPhase:         *lastPhase,
 	}
-	if err := server.fillProjectID(); err != nil {
-		log.Fatalln(err)
-	}
-	if err := server.ensureProjectConfiguration(); err != nil {
-		log.Fatalln(err)
-	}
 	e := echo.New()
+	e.Logger.SetLevel(log.DEBUG)
 	e.Use(middleware.Logger())
+	e.Logger.Debugf("Obtaining Github Project ID...")
+	if err := server.fillProjectID(); err != nil {
+		e.Logger.Fatal(err)
+	}
+	e.Logger.Debugf("Ensuring Github Project configuration meets expectations...")
+	if err := server.ensureProjectConfiguration(); err != nil {
+		e.Logger.Fatal(err)
+	}
+	e.Logger.Debugf("Starting Server...")
 	api.RegisterHandlers(e, server)
-	log.Fatalln(e.Start(*addr))
+	e.Logger.Fatal(e.Start(*addr))
 }

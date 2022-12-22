@@ -7,6 +7,7 @@ require (
 	github.com/getkin/kin-openapi v0.111.0
 	github.com/google/go-github/v48 v48.2.0
 	github.com/labstack/echo/v4 v4.9.1
+	github.com/labstack/gommon v0.4.0
 	github.com/shurcooL/githubv4 v0.0.0-20221203213311-70889c5dac07
 	golang.org/x/oauth2 v0.3.0
 )
@@ -21,7 +22,6 @@ require (
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/invopop/yaml v0.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
-	github.com/labstack/gommon v0.4.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
