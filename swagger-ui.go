@@ -25,6 +25,7 @@ const swaggerHtml = `
       window.ui = SwaggerUIBundle({
         url: '/openapi.yaml',
         dom_id: '#swagger-ui',
+        validatorUrl: null,
         presets: [
           SwaggerUIBundle.presets.apis,
           SwaggerUIStandalonePreset
