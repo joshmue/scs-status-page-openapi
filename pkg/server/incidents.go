@@ -3,11 +3,20 @@ package server
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/joshmue/scs-status-page-openapi/pkg/api"
 	"github.com/labstack/echo/v4"
 	"github.com/shurcooL/githubv4"
 )
+
+func ParseTimeOrNil(timeString string) (*time.Time, error) {
+	beganAt, err := time.Parse(time.RFC3339, timeString)
+	if err != nil {
+		return nil, err
+	}
+	return &beganAt, nil
+}
 
 func (s *ServerImplementation) GetIncidents(ctx echo.Context, params api.GetIncidentsParams) error {
 	type projectItem struct {
