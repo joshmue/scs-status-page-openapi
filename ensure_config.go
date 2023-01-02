@@ -9,7 +9,7 @@ import (
 )
 
 func (s *ServerImplementation) ensureProjectConfiguration() error {
-	// Check final "Status" field
+	// Make a single query to assess all relevant factors
 	var query struct {
 		Node struct {
 			ProjectV2 struct {
