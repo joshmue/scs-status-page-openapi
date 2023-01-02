@@ -19,7 +19,8 @@ func (s *ServerImplementation) fillProjectID() error {
 	var query struct {
 		User struct {
 			ProjectV2 struct {
-				Id string `graphql:"id"`
+				Id     string
+				Number int64
 			} `graphql:"projectV2(number: $number)"`
 		} `graphql:"user(login: $user)"`
 	}
@@ -35,6 +36,7 @@ func (s *ServerImplementation) fillProjectID() error {
 		return err
 	}
 	s.ProjectID = query.User.ProjectV2.Id
+	s.ProjectNumber = query.User.ProjectV2.Number
 	return nil
 }
 
