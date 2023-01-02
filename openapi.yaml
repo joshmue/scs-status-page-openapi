@@ -4,6 +4,8 @@ info:
   version: '1.0'
 components:
   schemas:
+    Id:
+      type: string
     IncidentImpactType:
       type: string
     IncidentPhase:
@@ -14,6 +16,11 @@ components:
         type: string
     Component:
       type: object
+      required:
+        - id
+        - displayName
+        - labels
+        - affectedBy
       properties:
         id:
           type: string
@@ -24,9 +31,15 @@ components:
         affectedBy:
           type: array
           items:
-            $ref: '#/components/schemas/Incident'
+            $ref: '#/components/schemas/Id'
     Incident:
       type: object
+      required:
+        - id
+        - title
+        - affects
+        - impactType
+        - phase
       properties:
         id:
           type: string
@@ -35,7 +48,7 @@ components:
         affects:
           type: array
           items:
-            $ref: '#/components/schemas/Component'
+            $ref: '#/components/schemas/Id'
         beganAt:
           type: string
           format: date-time
@@ -70,6 +83,23 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/IncidentImpactType'
+  /components/{componentId}:
+    get:
+      summary: get specific component by id
+      operationId: getComponent
+      parameters:
+      - in: path
+        name: componentId
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Component'
   /components:
     get:
       responses:
@@ -81,6 +111,23 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Component'
+  /incident/{incidentId}:
+    get:
+      summary: Get specific incident by id
+      operationId: getIncident
+      parameters:
+      - in: path
+        name: incidentId
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Incident'
   /incidents:
     get:
       summary: Get list of incidents

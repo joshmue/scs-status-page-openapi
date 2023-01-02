@@ -38,6 +38,9 @@ func (s *ServerImplementation) fillProjectID() error {
 	return nil
 }
 
+func (s *ServerImplementation) GetComponent(ctx echo.Context, componentId string) error {
+	return fmt.Errorf("not implemented")
+}
 func (s *ServerImplementation) GetComponents(ctx echo.Context) error {
 	var query struct {
 		Node struct {
@@ -72,8 +75,8 @@ func (s *ServerImplementation) GetComponents(ctx echo.Context) error {
 		for label := range query.Node.ProjectV2.Repositories.Nodes[repo].Labels.Nodes {
 			if strings.HasPrefix(query.Node.ProjectV2.Repositories.Nodes[repo].Labels.Nodes[label].Name, "component:") {
 				component := api.Component{
-					Id:          &query.Node.ProjectV2.Repositories.Nodes[repo].Labels.Nodes[label].Name,
-					DisplayName: &query.Node.ProjectV2.Repositories.Nodes[repo].Labels.Nodes[label].Description,
+					Id:          query.Node.ProjectV2.Repositories.Nodes[repo].Labels.Nodes[label].Name,
+					DisplayName: query.Node.ProjectV2.Repositories.Nodes[repo].Labels.Nodes[label].Description,
 				}
 				components = append(components, component)
 			}
@@ -145,7 +148,7 @@ func (s *ServerImplementation) GetIncidents(ctx echo.Context, params api.GetInci
 			ProjectV2ItemFieldLabelValue struct {
 				Labels struct {
 					Nodes []struct {
-						Name string
+						Id string
 					}
 				} `graphql:"labels(first:10)"`
 			} `graphql:"... on ProjectV2ItemFieldLabelValue"`
@@ -184,25 +187,26 @@ func (s *ServerImplementation) GetIncidents(ctx echo.Context, params api.GetInci
 			ctx.Logger().Warn(err)
 		}
 		incident := api.Incident{
-			Affects:    &[]api.Component{},
-			Id:         &query.Node.ProjectV2.Items.Nodes[itemKey].Content.Issue.Id,
-			Title:      &query.Node.ProjectV2.Items.Nodes[itemKey].Content.Issue.Title,
-			ImpactType: &query.Node.ProjectV2.Items.Nodes[itemKey].ImpactType.ProjectV2ItemFieldSingleSelectValue.Name,
-			Phase:      &query.Node.ProjectV2.Items.Nodes[itemKey].Phase.ProjectV2ItemFieldSingleSelectValue.Name,
+			Affects:    []string{},
+			Id:         query.Node.ProjectV2.Items.Nodes[itemKey].Content.Issue.Id,
+			Title:      query.Node.ProjectV2.Items.Nodes[itemKey].Content.Issue.Title,
+			ImpactType: query.Node.ProjectV2.Items.Nodes[itemKey].ImpactType.ProjectV2ItemFieldSingleSelectValue.Name,
+			Phase:      query.Node.ProjectV2.Items.Nodes[itemKey].Phase.ProjectV2ItemFieldSingleSelectValue.Name,
 			BeganAt:    beganAt,
 			EndedAt:    endedAt,
 		}
 		for componentKey := range query.Node.ProjectV2.Items.Nodes[itemKey].Labels.ProjectV2ItemFieldLabelValue.Labels.Nodes {
-			*incident.Affects = append(
-				*incident.Affects,
-				api.Component{
-					Id: &query.Node.ProjectV2.Items.Nodes[itemKey].Labels.ProjectV2ItemFieldLabelValue.Labels.Nodes[componentKey].Name,
-				},
+			incident.Affects = append(
+				incident.Affects,
+				query.Node.ProjectV2.Items.Nodes[itemKey].Labels.ProjectV2ItemFieldLabelValue.Labels.Nodes[componentKey].Id,
 			)
 		}
 		incidents = append(incidents, incident)
 	}
 	return ctx.JSON(200, incidents)
+}
+func (s *ServerImplementation) GetIncident(ctx echo.Context, incidentId string) error {
+	return fmt.Errorf("not implemented")
 }
 func (s *ServerImplementation) GetPhases(ctx echo.Context) error {
 	var query struct {

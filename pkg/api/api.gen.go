@@ -21,21 +21,24 @@ import (
 
 // Component defines model for Component.
 type Component struct {
-	AffectedBy  *[]Incident `json:"affectedBy,omitempty"`
-	DisplayName *string     `json:"displayName,omitempty"`
-	Id          *string     `json:"id,omitempty"`
-	Labels      *Labels     `json:"labels,omitempty"`
+	AffectedBy  []Id   `json:"affectedBy"`
+	DisplayName string `json:"displayName"`
+	Id          string `json:"id"`
+	Labels      Labels `json:"labels"`
 }
+
+// Id defines model for Id.
+type Id = string
 
 // Incident defines model for Incident.
 type Incident struct {
-	Affects    *[]Component        `json:"affects,omitempty"`
-	BeganAt    *time.Time          `json:"beganAt,omitempty"`
-	EndedAt    *time.Time          `json:"endedAt"`
-	Id         *string             `json:"id,omitempty"`
-	ImpactType *IncidentImpactType `json:"impactType,omitempty"`
-	Phase      *IncidentPhase      `json:"phase,omitempty"`
-	Title      *string             `json:"title,omitempty"`
+	Affects    []Id               `json:"affects"`
+	BeganAt    *time.Time         `json:"beganAt,omitempty"`
+	EndedAt    *time.Time         `json:"endedAt"`
+	Id         string             `json:"id"`
+	ImpactType IncidentImpactType `json:"impactType"`
+	Phase      IncidentPhase      `json:"phase"`
+	Title      string             `json:"title"`
 }
 
 // IncidentImpactType defines model for IncidentImpactType.
@@ -61,9 +64,15 @@ type ServerInterface interface {
 
 	// (GET /components)
 	GetComponents(ctx echo.Context) error
+	// get specific component by id
+	// (GET /components/{componentId})
+	GetComponent(ctx echo.Context, componentId string) error
 
 	// (GET /impacttypes)
 	GetImpacttypes(ctx echo.Context) error
+	// Get specific incident by id
+	// (GET /incident/{incidentId})
+	GetIncident(ctx echo.Context, incidentId string) error
 	// Get list of incidents
 	// (GET /incidents)
 	GetIncidents(ctx echo.Context, params GetIncidentsParams) error
@@ -86,12 +95,44 @@ func (w *ServerInterfaceWrapper) GetComponents(ctx echo.Context) error {
 	return err
 }
 
+// GetComponent converts echo context to params.
+func (w *ServerInterfaceWrapper) GetComponent(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "componentId" -------------
+	var componentId string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "componentId", runtime.ParamLocationPath, ctx.Param("componentId"), &componentId)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter componentId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.GetComponent(ctx, componentId)
+	return err
+}
+
 // GetImpacttypes converts echo context to params.
 func (w *ServerInterfaceWrapper) GetImpacttypes(ctx echo.Context) error {
 	var err error
 
 	// Invoke the callback with all the unmarshalled arguments
 	err = w.Handler.GetImpacttypes(ctx)
+	return err
+}
+
+// GetIncident converts echo context to params.
+func (w *ServerInterfaceWrapper) GetIncident(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "incidentId" -------------
+	var incidentId string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "incidentId", runtime.ParamLocationPath, ctx.Param("incidentId"), &incidentId)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter incidentId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.GetIncident(ctx, incidentId)
 	return err
 }
 
@@ -158,7 +199,9 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 	}
 
 	router.GET(baseURL+"/components", wrapper.GetComponents)
+	router.GET(baseURL+"/components/:componentId", wrapper.GetComponent)
 	router.GET(baseURL+"/impacttypes", wrapper.GetImpacttypes)
+	router.GET(baseURL+"/incident/:incidentId", wrapper.GetIncident)
 	router.GET(baseURL+"/incidents", wrapper.GetIncidents)
 	router.GET(baseURL+"/phases", wrapper.GetPhases)
 
@@ -167,16 +210,18 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/7xUQW/bPAz9Kwa/77ABXu01p+nWBdsQrNiCZbehB8aiExWypEp0AaPwfx8kJ/XSZpmH",
-	"Djkllh7J98hHPUBlG2cNGQ4gHiBUW2ow/Z3vL+KH89aRZ0XpCuuaKib5votfiqlJx/97qkHAf8WYs9gl",
-	"LBamUjIm63PgzhEIQO+xi99SBaex+4INxTS768BemU28V/LoscY16T8Wvh5Q/VjXrm+pSkQeSf1GYZgs",
-	"b2zWEX1r2qC5SlVq6xtkECCR6Q2rhiB/royMJHkiwLRa41oTCPYt5ZM7phqHFX9Px9PGtRgj+hzcFsPk",
-	"0GUCx3Yo1scGe2oiiwOmz4Qc1jiGuH40B0qpWFmDenkw4mchT8hEfsrUNmEHCbCar7IVI7chW+KGsqvl",
-	"AnK4Jx+UNSDg7UUZM1lHBp0CAbOL8uIScnDI21S1ONy3DaUpR14YSS4kCPhEPB9ROXgKzpow0L4sy/hT",
-	"WcM756JzWlUpvLgNkcd+j/+FfWMbJIXKK8eDyK+f42mfQzH4KeJPiln8AjuHmuPm/QtZu/jToh5Bcboe",
-	"G2LyAcSPhyd5V4yeM1tncXmzOiIzttldS77LauuzV98+zmez2bvXEA0HAtJVXPP0IEKICVLj7lrlSe63",
-	"fuzKlFelz58S+2DkS2iRkS8ndXNOP0x2QQ6hbRr03TDqTKuQJjgaI/kkPYcnTbIcEOcUOT670/wexZK/",
-	"33u39RoEbJmdKAptK9RbG1jMyrKE/qb/GQAA///y61WxMAgAAA==",
+	"H4sIAAAAAAAC/8xWT4vbPhD9KmJ+v0ML7jrdnOrbNrSL6dKGprdlD4o1zmqxJa2kFEzwdy8jJ3b+1SsI",
+	"hJ5iSzOj957ejLOBQtdGK1TeQbYBVzxjzcPjbLdBL8Zqg9ZLDFu8LLHwKD439CY91mH5f4slZPBfOtRM",
+	"twXTXECbgG8MQgbcWt7Qu5DOVLz5zmukAttt561UK9qX4uxyxZdYvXnkQxfVtglYfF1LiwKyR6p5eHBf",
+	"L9kn9tSj1csXLDydm5+Hk6tCihGh3IUqLXHF1V0oX2pbcw8ZCO7xg5cB/gkgVALFSIJaVxVfVgiZt2tM",
+	"onWXteGF/xWW3yCylSQfMtoEzDN30anzEExySF+ds8e5e+1ik174A8w7AGev9hTw2FXPd0xOIh56b3Ih",
+	"pJda8Wp+YIqTlCMwREyqUofYjjssZgu28NyvHZvzFbK7eQ4J/EbrpFaQwcebCVXSBhU3EjKY3kxubokx",
+	"98/h1PSw0VcY7EG4OIEka8M9+tkQRfI6o5XrYN9OJvRTaOW3XufGVLII6emLIxy7ARJt+GHInPieZBDo",
+	"CiuN70j++EarbbLPJd30z7loo5gFVSyv0aN1kD1uQFJ1Uop6I8wi2KsK+z7rGmZgeezJpwtVixTrL+Ik",
+	"4NZ1zW0DGenAnMFClrJgfTW2bJgUITTtWoMYjFoi3wu7hifOz454c8htfrrZPb3hjH5+xxhjqPnP+KLH",
+	"H2OL+31b7MgcuGK75mIkc6eaHZ6/8Nx6pktGnx5WUiTzmr2u0Tas1Ja9+/l1Np1OP72nWU0ZYWvQ21GB",
+	"UaljvoltcgzsixKXwEIlLgf1dM12im6iY7dU0oUbHIwRfBK+paMmmXcR1yQ5/GmIGxdt+ycAAP//Wmmj",
+	"dwILAAA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
