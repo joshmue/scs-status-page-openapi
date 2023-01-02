@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"github.com/shurcooL/githubv4"
 )
 
-func (s *ServerImplementation) fillProjectID() error {
+func (s *ServerImplementation) FillProjectID() error {
 	// TODO
 	// Make this also accept organizations
 	if s.ProjectOwnerIsOrg {

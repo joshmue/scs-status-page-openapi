@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"github.com/shurcooL/githubv4"
 )
 
-func (s *ServerImplementation) ensureProjectConfiguration() error {
+func (s *ServerImplementation) EnsureProjectConfiguration() error {
 	// Make a single query to assess all relevant factors
 	var query struct {
 		Node struct {

@@ -6,25 +6,14 @@ import (
 	"os"
 	"strings"
 
-	"github.com/google/go-github/v48/github"
 	"github.com/joshmue/scs-status-page-openapi/pkg/api"
+	"github.com/joshmue/scs-status-page-openapi/pkg/server"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
 	"github.com/shurcooL/githubv4"
 	"golang.org/x/oauth2"
 )
-
-type ServerImplementation struct {
-	GithubClient      *github.Client
-	GithubV4Client    *githubv4.Client
-	ProjectOwner      string
-	ProjectOwnerIsOrg bool
-	ProjectNumber     int64
-	ProjectID         string
-	ImpactTypes       []string
-	LastPhase         string
-}
 
 func main() {
 	addr := flag.String("addr", ":3000", "address to listen on")
@@ -38,8 +27,7 @@ func main() {
 	httpClient := oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: os.Getenv("GITHUB_TOKEN")},
 	))
-	server := &ServerImplementation{
-		GithubClient:      github.NewClient(httpClient),
+	server := &server.ServerImplementation{
 		GithubV4Client:    githubv4.NewClient(httpClient),
 		ProjectOwner:      *projectOwner,
 		ProjectOwnerIsOrg: *projectOwnerIsOrg,
@@ -51,11 +39,11 @@ func main() {
 	e := echo.New()
 	e.Logger.SetLevel(log.DEBUG)
 	e.Logger.Debugf("Obtaining Github Project ID...")
-	if err := server.fillProjectID(); err != nil {
+	if err := server.FillProjectID(); err != nil {
 		e.Logger.Fatal(err)
 	}
 	e.Logger.Debugf("Ensuring Github Project configuration meets expectations...")
-	if err := server.ensureProjectConfiguration(); err != nil {
+	if err := server.EnsureProjectConfiguration(); err != nil {
 		e.Logger.Fatal(err)
 	}
 	e.Logger.Debugf("Starting Server...")
