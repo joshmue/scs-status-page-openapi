@@ -75,8 +75,8 @@ func (s *ServerImplementation) GetComponents(ctx echo.Context) error {
 		for label := range query.Node.ProjectV2.Repositories.Nodes[repo].Labels.Nodes {
 			if strings.HasPrefix(query.Node.ProjectV2.Repositories.Nodes[repo].Labels.Nodes[label].Name, "component:") {
 				component := api.Component{
-					Id:          query.Node.ProjectV2.Repositories.Nodes[repo].Labels.Nodes[label].Name,
-					DisplayName: query.Node.ProjectV2.Repositories.Nodes[repo].Labels.Nodes[label].Description,
+					Id:          query.Node.ProjectV2.Repositories.Nodes[repo].Labels.Nodes[label].Id,
+					DisplayName: strings.TrimPrefix(query.Node.ProjectV2.Repositories.Nodes[repo].Labels.Nodes[label].Name, "component:"),
 				}
 				components = append(components, component)
 			}
