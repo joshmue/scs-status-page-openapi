@@ -63,7 +63,14 @@ func main() {
 	e.Logger.Debugf("Registering handlers...")
 	e.Use(middleware.Logger())
 	api.RegisterHandlers(e, server)
-	e.File("/openapi.yaml", "./openapi.yaml")
+	e.GET("/openapi.json", func(c echo.Context) error {
+		swagger, err := api.GetSwagger()
+		if err != nil {
+			c.Logger().Error(err)
+			return echo.NewHTTPError(500)
+		}
+		return c.JSON(200, swagger)
+	})
 	e.GET("/swagger/", serveSwagger)
 
 	e.Logger.Debugf("Starting server...")
