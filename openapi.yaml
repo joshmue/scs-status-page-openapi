@@ -137,6 +137,7 @@ paths:
         schema:
           type: string
           format: date-time
+          default: '2022-01-01T10:10:10.010Z'
         required: true
         description: Start of time frame to query for (RFC3339)
       - in: query
@@ -144,6 +145,7 @@ paths:
         schema:
           type: string
           format: date-time
+          default: '2024-01-01T10:10:10.010Z'
         required: true
         description: End of time frame to query for (RFC3339)
       responses:
