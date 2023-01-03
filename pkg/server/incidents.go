@@ -18,44 +18,72 @@ func ParseTimeOrNil(timeString string) (*time.Time, error) {
 	return &beganAt, nil
 }
 
-func (s *ServerImplementation) GetIncidents(ctx echo.Context, params api.GetIncidentsParams) error {
-	type projectItem struct {
-		Id string
-		Content struct {
-			Issue struct {
-				Title string
-			} `graphql:"... on Issue"`
-		}
-		Phase struct {
-			ProjectV2ItemFieldSingleSelectValue struct {
-				Name string
-			} `graphql:"... on ProjectV2ItemFieldSingleSelectValue"`
-		} `graphql:"phase: fieldValueByName(name: \"Status\")"`
-		ImpactType struct {
-			ProjectV2ItemFieldSingleSelectValue struct {
-				Name string
-			} `graphql:"... on ProjectV2ItemFieldSingleSelectValue"`
-		} `graphql:"impacttype: fieldValueByName(name: \"Impact Type\")"`
-		BeganAt struct {
-			ProjectV2ItemFieldTextValue struct {
-				Text string
-			} `graphql:"... on ProjectV2ItemFieldTextValue"`
-		} `graphql:"beganat: fieldValueByName(name: \"Began At\")"`
-		EndedAt struct {
-			ProjectV2ItemFieldTextValue struct {
-				Text string
-			} `graphql:"... on ProjectV2ItemFieldTextValue"`
-		} `graphql:"endedat: fieldValueByName(name: \"Ended At\")"`
-		Labels struct {
-			ProjectV2ItemFieldLabelValue struct {
-				Labels struct {
-					Nodes []struct {
-						Id string
-					}
-				} `graphql:"labels(first:10)"`
-			} `graphql:"... on ProjectV2ItemFieldLabelValue"`
-		} `graphql:"labels: fieldValueByName(name: \"Labels\")"`
+func (i *projectItem) ToIncident(ctx echo.Context) api.Incident {
+	beganAt, err := ParseTimeOrNil(i.BeganAt.ProjectV2ItemFieldTextValue.Text)
+	if err != nil {
+		ctx.Logger().Warn(err)
 	}
+	endedAt, err := ParseTimeOrNil(i.EndedAt.ProjectV2ItemFieldTextValue.Text)
+	if err != nil {
+		ctx.Logger().Warn(err)
+	}
+	incident := api.Incident{
+		Affects:    []string{},
+		Id:         i.Id,
+		Title:      i.Content.Issue.Title,
+		ImpactType: i.ImpactType.ProjectV2ItemFieldSingleSelectValue.Name,
+		Phase:      i.Phase.ProjectV2ItemFieldSingleSelectValue.Name,
+		BeganAt:    beganAt,
+		EndedAt:    endedAt,
+	}
+	for componentKey := range i.Labels.ProjectV2ItemFieldLabelValue.Labels.Nodes {
+		incident.Affects = append(
+			incident.Affects,
+			i.Labels.ProjectV2ItemFieldLabelValue.Labels.Nodes[componentKey].Id,
+		)
+	}
+	return incident
+}
+
+type projectItem struct {
+	Id      string
+	Content struct {
+		Issue struct {
+			Title string
+		} `graphql:"... on Issue"`
+	}
+	Phase struct {
+		ProjectV2ItemFieldSingleSelectValue struct {
+			Name string
+		} `graphql:"... on ProjectV2ItemFieldSingleSelectValue"`
+	} `graphql:"phase: fieldValueByName(name: \"Status\")"`
+	ImpactType struct {
+		ProjectV2ItemFieldSingleSelectValue struct {
+			Name string
+		} `graphql:"... on ProjectV2ItemFieldSingleSelectValue"`
+	} `graphql:"impacttype: fieldValueByName(name: \"Impact Type\")"`
+	BeganAt struct {
+		ProjectV2ItemFieldTextValue struct {
+			Text string
+		} `graphql:"... on ProjectV2ItemFieldTextValue"`
+	} `graphql:"beganat: fieldValueByName(name: \"Began At\")"`
+	EndedAt struct {
+		ProjectV2ItemFieldTextValue struct {
+			Text string
+		} `graphql:"... on ProjectV2ItemFieldTextValue"`
+	} `graphql:"endedat: fieldValueByName(name: \"Ended At\")"`
+	Labels struct {
+		ProjectV2ItemFieldLabelValue struct {
+			Labels struct {
+				Nodes []struct {
+					Id string
+				}
+			} `graphql:"labels(first:10)"`
+		} `graphql:"... on ProjectV2ItemFieldLabelValue"`
+	} `graphql:"labels: fieldValueByName(name: \"Labels\")"`
+}
+
+func (s *ServerImplementation) GetIncidents(ctx echo.Context, params api.GetIncidentsParams) error {
 	var query struct {
 		Node struct {
 			ProjectV2 struct {
@@ -80,30 +108,7 @@ func (s *ServerImplementation) GetIncidents(ctx echo.Context, params api.GetInci
 	// Map GraphQL output to OpenAPI Spec
 	incidents := []api.Incident{}
 	for itemKey := range query.Node.ProjectV2.Items.Nodes {
-		beganAt, err := ParseTimeOrNil(query.Node.ProjectV2.Items.Nodes[itemKey].BeganAt.ProjectV2ItemFieldTextValue.Text)
-		if err != nil {
-			ctx.Logger().Warn(err)
-		}
-		endedAt, err := ParseTimeOrNil(query.Node.ProjectV2.Items.Nodes[itemKey].EndedAt.ProjectV2ItemFieldTextValue.Text)
-		if err != nil {
-			ctx.Logger().Warn(err)
-		}
-		incident := api.Incident{
-			Affects:    []string{},
-			Id:         query.Node.ProjectV2.Items.Nodes[itemKey].Id,
-			Title:      query.Node.ProjectV2.Items.Nodes[itemKey].Content.Issue.Title,
-			ImpactType: query.Node.ProjectV2.Items.Nodes[itemKey].ImpactType.ProjectV2ItemFieldSingleSelectValue.Name,
-			Phase:      query.Node.ProjectV2.Items.Nodes[itemKey].Phase.ProjectV2ItemFieldSingleSelectValue.Name,
-			BeganAt:    beganAt,
-			EndedAt:    endedAt,
-		}
-		for componentKey := range query.Node.ProjectV2.Items.Nodes[itemKey].Labels.ProjectV2ItemFieldLabelValue.Labels.Nodes {
-			incident.Affects = append(
-				incident.Affects,
-				query.Node.ProjectV2.Items.Nodes[itemKey].Labels.ProjectV2ItemFieldLabelValue.Labels.Nodes[componentKey].Id,
-			)
-		}
-		incidents = append(incidents, incident)
+		incidents = append(incidents, query.Node.ProjectV2.Items.Nodes[itemKey].ToIncident(ctx))
 	}
 	return ctx.JSON(200, incidents)
 }
