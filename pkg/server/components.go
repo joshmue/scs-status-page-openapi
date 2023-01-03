@@ -17,7 +17,11 @@ func (s *ServerImplementation) GetComponent(ctx echo.Context, componentId string
 				Name   string
 				Issues struct {
 					Nodes []struct {
-						Id string
+						ProjectItems struct {
+							Nodes []struct {
+								Id string
+							}
+						} `graphql:"projectItems(first:10)"`
 					}
 				} `graphql:"issues(first:10)"`
 			} `graphql:"... on Label"`
@@ -35,8 +39,10 @@ func (s *ServerImplementation) GetComponent(ctx echo.Context, componentId string
 		return echo.NewHTTPError(500)
 	}
 	affectedBy := []api.Id{}
-	for i := range query.Node.Label.Issues.Nodes {
-		affectedBy = append(affectedBy, query.Node.Label.Issues.Nodes[i].Id)
+	for issue := range query.Node.Label.Issues.Nodes {
+		for projectItem := range query.Node.Label.Issues.Nodes[issue].ProjectItems.Nodes {
+			affectedBy = append(affectedBy, query.Node.Label.Issues.Nodes[issue].ProjectItems.Nodes[projectItem].Id)
+		}
 	}
 	component := api.Component{
 		AffectedBy:  affectedBy,

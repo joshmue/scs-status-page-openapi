@@ -20,10 +20,9 @@ func ParseTimeOrNil(timeString string) (*time.Time, error) {
 
 func (s *ServerImplementation) GetIncidents(ctx echo.Context, params api.GetIncidentsParams) error {
 	type projectItem struct {
-		Type    string
+		Id string
 		Content struct {
 			Issue struct {
-				Id    string
 				Title string
 			} `graphql:"... on Issue"`
 		}
@@ -91,7 +90,7 @@ func (s *ServerImplementation) GetIncidents(ctx echo.Context, params api.GetInci
 		}
 		incident := api.Incident{
 			Affects:    []string{},
-			Id:         query.Node.ProjectV2.Items.Nodes[itemKey].Content.Issue.Id,
+			Id:         query.Node.ProjectV2.Items.Nodes[itemKey].Id,
 			Title:      query.Node.ProjectV2.Items.Nodes[itemKey].Content.Issue.Title,
 			ImpactType: query.Node.ProjectV2.Items.Nodes[itemKey].ImpactType.ProjectV2ItemFieldSingleSelectValue.Name,
 			Phase:      query.Node.ProjectV2.Items.Nodes[itemKey].Phase.ProjectV2ItemFieldSingleSelectValue.Name,
