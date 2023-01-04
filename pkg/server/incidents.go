@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/joshmue/scs-status-page-openapi/pkg/api"
@@ -113,5 +112,21 @@ func (s *ServerImplementation) GetIncidents(ctx echo.Context, params api.GetInci
 	return ctx.JSON(200, incidents)
 }
 func (s *ServerImplementation) GetIncident(ctx echo.Context, incidentId string) error {
-	return fmt.Errorf("not implemented")
+	var query struct {
+		Node struct {
+			ProjectV2Item projectItem `graphql:"... on ProjectV2Item"`
+		} `graphql:"node(id: $itemid)"`
+	}
+	err := s.GithubV4Client.Query(
+		context.Background(),
+		&query,
+		map[string]interface{}{
+			"itemid": githubv4.ID(incidentId),
+		},
+	)
+	if err != nil {
+		ctx.Logger().Error(err)
+		return echo.NewHTTPError(500)
+	}
+	return ctx.JSON(200, query.Node.ProjectV2Item.ToIncident(ctx))
 }
