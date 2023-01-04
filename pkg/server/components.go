@@ -9,22 +9,40 @@ import (
 	"github.com/shurcooL/githubv4"
 )
 
+func (l *projectLabel) ToComponent() api.Component {
+	affectedBy := []api.Id{}
+	for issue := range l.Issues.Nodes {
+		for projectItem := range l.Issues.Nodes[issue].ProjectItems.Nodes {
+			affectedBy = append(affectedBy, l.Issues.Nodes[issue].ProjectItems.Nodes[projectItem].Id)
+		}
+	}
+	return api.Component{
+		AffectedBy:  affectedBy,
+		DisplayName: strings.TrimPrefix(l.Name, "component:"),
+		Id:          l.Id,
+		Labels:      map[string]string{}, // TODO
+	}
+}
+
+type projectLabel struct {
+	Id          string
+	Name        string
+	Description string
+	Issues      struct {
+		Nodes []struct {
+			ProjectItems struct {
+				Nodes []struct {
+					Id string
+				}
+			} `graphql:"projectItems(first:10)"`
+		}
+	} `graphql:"issues(first:10)"`
+}
+
 func (s *ServerImplementation) GetComponent(ctx echo.Context, componentId string) error {
 	var query struct {
 		Node struct {
-			Label struct {
-				Id     string
-				Name   string
-				Issues struct {
-					Nodes []struct {
-						ProjectItems struct {
-							Nodes []struct {
-								Id string
-							}
-						} `graphql:"projectItems(first:10)"`
-					}
-				} `graphql:"issues(first:10)"`
-			} `graphql:"... on Label"`
+			Label projectLabel `graphql:"... on Label"`
 		} `graphql:"node(id: $labelid)"`
 	}
 	err := s.GithubV4Client.Query(
@@ -38,19 +56,7 @@ func (s *ServerImplementation) GetComponent(ctx echo.Context, componentId string
 		ctx.Logger().Error(err)
 		return echo.NewHTTPError(500)
 	}
-	affectedBy := []api.Id{}
-	for issue := range query.Node.Label.Issues.Nodes {
-		for projectItem := range query.Node.Label.Issues.Nodes[issue].ProjectItems.Nodes {
-			affectedBy = append(affectedBy, query.Node.Label.Issues.Nodes[issue].ProjectItems.Nodes[projectItem].Id)
-		}
-	}
-	component := api.Component{
-		AffectedBy:  affectedBy,
-		DisplayName: strings.TrimPrefix(query.Node.Label.Name, "component:"),
-		Id:          componentId,
-		Labels:      map[string]string{}, // TODO
-	}
-	return ctx.JSON(200, component)
+	return ctx.JSON(200, query.Node.Label.ToComponent())
 }
 func (s *ServerImplementation) GetComponents(ctx echo.Context) error {
 	var query struct {
@@ -59,14 +65,10 @@ func (s *ServerImplementation) GetComponents(ctx echo.Context) error {
 				Repositories struct {
 					Nodes []struct {
 						Labels struct {
-							Nodes []struct {
-								Name        string
-								Id          string
-								Description string
-							}
-						} `graphql:"labels(first: 100)"`
+							Nodes []projectLabel
+						} `graphql:"labels(first: 10)"`
 					}
-				} `graphql:"repositories(first: 100)"`
+				} `graphql:"repositories(first: 10)"`
 			} `graphql:"... on ProjectV2"`
 		} `graphql:"node(id: $projectid)"`
 	}
@@ -84,13 +86,10 @@ func (s *ServerImplementation) GetComponents(ctx echo.Context) error {
 	components := []api.Component{}
 	for repo := range query.Node.ProjectV2.Repositories.Nodes {
 		for label := range query.Node.ProjectV2.Repositories.Nodes[repo].Labels.Nodes {
-			if strings.HasPrefix(query.Node.ProjectV2.Repositories.Nodes[repo].Labels.Nodes[label].Name, "component:") {
-				component := api.Component{
-					Id:          query.Node.ProjectV2.Repositories.Nodes[repo].Labels.Nodes[label].Id,
-					DisplayName: strings.TrimPrefix(query.Node.ProjectV2.Repositories.Nodes[repo].Labels.Nodes[label].Name, "component:"),
-				}
-				components = append(components, component)
+			if !strings.HasPrefix(query.Node.ProjectV2.Repositories.Nodes[repo].Labels.Nodes[label].Name, "component:") {
+				continue
 			}
+			components = append(components, query.Node.ProjectV2.Repositories.Nodes[repo].Labels.Nodes[label].ToComponent())
 		}
 	}
 	return ctx.JSON(200, components)
