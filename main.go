@@ -46,7 +46,6 @@ func main() {
 	if err := server.EnsureProjectConfiguration(); err != nil {
 		e.Logger.Fatal(err)
 	}
-	e.Logger.Debugf("Starting Server...")
 
 	e.Logger.Debugf("Registering handlers...")
 	e.Use(middleware.Logger())
